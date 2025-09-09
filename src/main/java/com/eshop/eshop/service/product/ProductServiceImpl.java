@@ -2,6 +2,7 @@ package com.eshop.eshop.service.product;
 
 import com.eshop.eshop.dto.ImageDto;
 import com.eshop.eshop.dto.ProductDto;
+import com.eshop.eshop.exception.AlreadyExistException;
 import com.eshop.eshop.exception.ProductNotFoundException;
 import com.eshop.eshop.model.*;
 import com.eshop.eshop.repository.CategoryRepository;
@@ -32,6 +33,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product addProduct(AddProductRequest request) {
+        if(productExists(request.getName(), request.getBrand())){
+            throw new AlreadyExistException(request.getName()+" - "+request.getBrand()+" already exists, you can update it");
+        }
         // if category exist, save it
         Category category = Optional.ofNullable(categoryRepository.findByName(request.getCategory().getName()))
                 .orElseGet(()-> {
@@ -40,6 +44,10 @@ public class ProductServiceImpl implements ProductService {
                 });
         request.setCategory(category);
         return productRepository.save(createProduct(request, category));
+    }
+
+    private boolean productExists(String name, String brand){
+        return productRepository.existsByNameAndBrand(name,brand);
     }
 
     private Product createProduct(AddProductRequest request, Category category){

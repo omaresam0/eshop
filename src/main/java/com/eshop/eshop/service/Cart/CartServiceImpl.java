@@ -2,6 +2,7 @@ package com.eshop.eshop.service.Cart;
 
 import com.eshop.eshop.exception.ResourceNotFound;
 import com.eshop.eshop.model.Cart;
+import com.eshop.eshop.model.User;
 import com.eshop.eshop.repository.CartItemRepository;
 import com.eshop.eshop.repository.CartRepository;
 import jakarta.transaction.Transactional;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 @Service
@@ -34,6 +36,7 @@ public class CartServiceImpl implements CartService{
         Cart cart = getCart(id);
         cartItemRepository.deleteAllByCartId(id);
         cart.getItems().clear();
+        cart.setTotalAmount(BigDecimal.ZERO);
         cartRepository.deleteById(id);
     }
 
@@ -44,10 +47,18 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    public Long intializeNewCart(){
-        Cart newCart = new Cart(); // id must be null
-        Cart saved = cartRepository.save(newCart); // INSERT, not MERGE
-        return saved.getId();
+    public Cart intializeNewCart(User user){
+        return Optional.ofNullable(getCartByUserId(user.getId()))
+                .orElseGet(()->{
+                    Cart cart = new Cart();
+                    cart.setUser(user);
+                    return cartRepository.save(cart);
+                });
+    }
+
+    @Override
+    public Cart getCartByUserId(Long userId) {
+        return cartRepository.findByUserId(userId);
     }
 }
 
